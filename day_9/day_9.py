@@ -51,6 +51,56 @@ def get_potential_corners(tiles):
             del dr[j]
     return ul, dl, ur, dr
 
+def get_corner_types(tiles):
+    ul, ur, dl, dr = np.zeros(tiles.shape[0]), np.zeros(tiles.shape[0]), np.zeros(tiles.shape[0]), np.zeros(tiles.shape[0])
+    for i in range(tiles.shape[0]):
+        tile = tiles[i, :]
+        if i == 0:
+            neighbor_0 = tiles[-1, :]
+        else:
+            neighbor_0 = tiles[i-1, :]
+        if i == tiles.shape[0]-1:
+            neighbor_1 = tiles[0, :]
+        else:
+            neighbor_1 = tiles[i+1, :]
+        if tile[0] > neighbor_0[0]:
+            if tile[1] < neighbor_1[1]:
+                # Right, then down
+                ur[i] = 1
+            else:
+                # Right, then up
+                dl[i] = 1
+                ul[i] = 1
+                ur[i] = 1
+        if tile[0] < neighbor_0[0]:
+            if tile[1] > neighbor_1[1]:
+                # Left, then up
+                dl[i] = 1
+            else:
+                # Left, then down
+                ur[i] = 1
+                dr[i] = 1
+                dl[i] = 1
+        if tile[1] > neighbor_0[1]:
+            if tile[0] > neighbor_1[0]:
+                # Down, then left
+                dr[i] = 1 
+            else:
+                # Down, then right
+                dr[i] = 1 
+                ur[i] = 1 
+                ul[i] = 1 
+        if tile[1] < neighbor_0[1]:
+            if tile[0] < neighbor_1[0]:
+                # Up, then right
+                ul[i] = 1
+            else:
+                # Up, then left
+                dl[i] = 1
+                dr[i] = 1
+                ul[i] = 1
+    return ul, dl, ur, dr
+
 def get_areas(ul, dl, ur, dr):
     max_area = 0
     for ul_tile in ul:
@@ -65,7 +115,45 @@ def get_areas(ul, dl, ur, dr):
                 max_area = max(max_area, area)
     return max_area
 
+def get_areas_part_2(ul_all, dl_all, ur_all, dr_all, tiles):
+    max_area = 0
+    max_ul, max_dl, max_dr, max_ur = None, None, None, None
+    for ul in tiles[np.where(ul_all==1)]:
+        dr_ind = np.where(np.logical_and(np.logical_and(tiles[:, 1] >= ul[1], tiles[:, 0] >= ul[0]), dr_all==1))
+        dr_tiles = tiles[dr_ind[0], :]
+        for dr in dr_tiles:
+            ur_ind = np.where(np.logical_and(np.logical_and(tiles[:, 1] <= ul[1], tiles[:, 0] >= dr[0]), ur_all==1))
+            dl_ind = np.where(np.logical_and(np.logical_and(tiles[:, 1] >= dr[1], tiles[:, 0] <= ul[0]), dl_all==1))
+            if dl_ind[0].shape[0] > 0 and ur_ind[0].shape[0] > 0:
+                height = dr[1]-ul[1] + 1
+                width = dr[0]-ul[0] + 1
+                max_area = max(height*width, max_area)
+                if height*width==max_area:
+                    max_ul = ul
+                    max_dr = dr
+                    max_ur = ur_ind
+                    max_dl = dl_ind
+
+    """
+    for ur in tiles:
+        dl_ind = np.where(np.logical_and(tiles[:, 1] >= ur[1], tiles[:, 0] <= ur[0]))
+        dl_tiles = tiles[dl_ind[0], :]
+        for dl in dl_tiles:
+            ul_ind = np.where(np.logical_and(tiles[:, 1] <= ur[1], tiles[:, 0] <= dl[0]))
+            dr_ind = np.where(np.logical_and(tiles[:, 1] >= dl[1], tiles[:, 0] >= ur[0]))
+            if ul_ind[0].shape[0] > 0 and dr_ind[0].shape[0] > 0:
+                height = dl[1]-ur[1]+1
+                width=ur[0]-dl[0] + 1
+                max_area = max(height*width, max_area)
+    """
+    breakpoint()
+    return max_area
+    
+
 tiles = parse_red_tiles()
 ul, dl, ur, dr = get_potential_corners(tiles)
-area = get_areas(ul, dl, ur, dr)
+#area = get_areas(ul, dl, ur, dr)
+ul_all, dl_all, ur_all, dr_all = get_corner_types(tiles)
+breakpoint()
+area = get_areas_part_2(ul_all, dl_all, ur_all, dr_all, tiles)
 breakpoint()
